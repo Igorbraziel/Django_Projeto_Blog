@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+{% include 'blog/partials/_head.html'%}
+<body>
+    {% include 'blog/partials/_header.html' %}
+
+    {% block content %}
+    {% endblock content%}
+
+    {% include 'blog/partials/_pagination.html' %}
+
+    {% include 'blog/partials/_footer.html' %}
+</body>
+</html>

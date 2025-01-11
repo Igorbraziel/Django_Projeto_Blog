@@ -3,7 +3,6 @@ from django.shortcuts import render
 
 posts = list(range(1000))
 
-
 def index(request):
     paginator = Paginator(posts, 9)
     page_number = request.GET.get("page")

@@ -5,11 +5,20 @@
     <div class="section-content-wide">
       <div class="section-gap">
 
-        <div class="card-grid">
-          {% for post in page_obj %}
-            {% include 'blog/partials/_post-card.html' with i=forloop.counter0 %}
-          {% endfor %}
+        {% if page_obj %}
+          <div class="card-grid">
+            {% for post in page_obj %}
+              {% include 'blog/partials/_post-card.html' with i=forloop.counter0 %}
+            {% endfor %}
+          </div>
+        {% else %}
+        <div class="not-found center">
+          <h1>Not found</h1>
+          <p>Nothing found at this link, 
+            click on another link on our blog or go to 
+            <a href="{% url 'blog:index' %}">Home</a></p>
         </div>
+        {% endif %}
 
       </div>
     </div>

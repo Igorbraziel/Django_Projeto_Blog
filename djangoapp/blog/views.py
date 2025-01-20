@@ -1,5 +1,6 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render
+from django.urls import reverse
 from blog.models import Post
 
 posts = list(range(1000))
@@ -22,7 +23,7 @@ def index(request):
     )
 
 
-def page(request):
+def page(request, slug):
     paginator = Paginator(posts, PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -36,14 +37,66 @@ def page(request):
     )
 
 
-def post(request):
+def post(request, slug):
+    post_obj = Post.objects.get_published().filter(slug=slug).first()
+
+    return render(
+        request,
+        'blog/pages/post.html',
+        {
+            'post': post_obj,
+        }
+    )
+    
+
+def created_by(request, id):
+    posts = Post.objects.get_published().filter(created_by__pk=id)
+    
     paginator = Paginator(posts, PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
     return render(
         request,
-        'blog/pages/post.html',
+        'blog/pages/index.html',
+        {
+            'page_obj': page_obj,
+        }
+    )
+    
+
+def category(request, slug):
+    if not slug:
+        return reverse('blog:index')
+
+    posts = Post.objects.get_published().filter(category__slug=slug)
+    
+    paginator = Paginator(posts, PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    return render(
+        request, 
+        'blog//pages/index.html',
+        {
+            'page_obj': page_obj,
+        }
+    )
+    
+    
+def tag(request, slug):
+    if not slug:
+        return reverse('blog:index')
+
+    posts = Post.objects.get_published().filter(tags__slug=slug)
+    
+    paginator = Paginator(posts, PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    
+    return render(
+        request, 
+        'blog//pages/index.html',
         {
             'page_obj': page_obj,
         }

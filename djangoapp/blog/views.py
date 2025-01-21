@@ -25,24 +25,23 @@ class PostListView(ListView):
             'page_title': "Home - ",
         })
         return context
-
-
-
-def index(request):
-    posts = Post.objects.get_published()
     
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
 
-    return render(
-        request,
-        'blog/pages/index.html',
-        {
-            'page_obj': page_obj,
-            'page_title': "Home - ",
-        }
-    )
+# def index(request):
+#     posts = Post.objects.get_published()
+    
+#     paginator = Paginator(posts, PER_PAGE)
+#     page_number = request.GET.get("page")
+#     page_obj = paginator.get_page(page_number)
+
+#     return render(
+#         request,
+#         'blog/pages/index.html',
+#         {
+#             'page_obj': page_obj,
+#             'page_title': "Home - ",
+#         }
+#     )
 
 
 def page(request, slug):
@@ -76,35 +75,76 @@ def post(request, slug):
         }
     )
     
-
-def created_by(request, id):
-    user = User.objects.filter(pk=id).first()
     
-    if user is None:
-        raise Http404()
-    
-    posts = Post.objects.get_published().filter(created_by__pk=id)
-    
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    
-    user_full_name = user.username
-    
-    if user.first_name and user.last_name:
-        user_full_name = f'{user.first_name} {user.last_name}'
+class CreatedByListView(PostListView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._temp_context = {}
         
-    page_title = 'Author - ' + user_full_name + ' - '
+    def get(self, request, *args, **kwargs):
+        id = self.kwargs.get('id')
+        user = User.objects.filter(id=id).first()
         
-
-    return render(
-        request,
-        'blog/pages/index.html',
-        {
-            'page_obj': page_obj,
+        if user is None:
+            raise Http404()
+        
+        self._temp_context.update({
+            'user': user,
+            'id': id,
+        })
+        
+        return super().get(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self._temp_context['user']
+        user_full_name = user.username
+        
+        if user.first_name and user.last_name:
+            user_full_name = f'{user.first_name} {user.last_name}'
+            
+        page_title = 'Author - ' + user_full_name + ' - '
+        
+        context.update({
             'page_title': page_title,
-        }
-    )
+        })
+        
+        return context
+    
+    def get_queryset(self):
+        self.queryset = super().get_queryset()
+        self.queryset = self.queryset.filter(created_by__pk=self._temp_context['id'])
+        return self.queryset
+    
+
+# def created_by(request, id):
+#     user = User.objects.filter(pk=id).first()
+    
+#     if user is None:
+#         raise Http404()
+    
+#     posts = Post.objects.get_published().filter(created_by__pk=id)
+    
+#     paginator = Paginator(posts, PER_PAGE)
+#     page_number = request.GET.get("page")
+#     page_obj = paginator.get_page(page_number)
+    
+#     user_full_name = user.username
+    
+#     if user.first_name and user.last_name:
+#         user_full_name = f'{user.first_name} {user.last_name}'
+        
+#     page_title = 'Author - ' + user_full_name + ' - '
+        
+
+#     return render(
+#         request,
+#         'blog/pages/index.html',
+#         {
+#             'page_obj': page_obj,
+#             'page_title': page_title,
+#         }
+#     )
     
 
 def category(request, slug):

@@ -2,11 +2,31 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.urls import reverse
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.http import Http404
+from django.views.generic import ListView
 from blog.models import Post, Page
 
 posts = list(range(1000))
 
 PER_PAGE = 9
+
+class PostListView(ListView):
+    model = Post
+    template_name = 'blog/pages/index.html'
+    ordering = '-pk',
+    paginate_by = PER_PAGE
+    context_object_name = 'posts'
+    queryset = Post.objects.get_published()
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'page_title': "Home - ",
+        })
+        return context
+
+
 
 def index(request):
     posts = Post.objects.get_published()
@@ -20,18 +40,23 @@ def index(request):
         'blog/pages/index.html',
         {
             'page_obj': page_obj,
+            'page_title': "Home - ",
         }
     )
 
 
 def page(request, slug):
-    page = Page.objects.filter(is_published=True).filter(slug=slug).first()
+    page_obj = Page.objects.filter(is_published=True).filter(slug=slug).first()
+
+    if page_obj is None:
+        raise Http404()
 
     return render(
         request,
         'blog/pages/page.html',
         {
-            'page': page,
+            'page': page_obj,
+            'page_title': f'Page - {page_obj.title} - ',
         }
     )
 
@@ -39,27 +64,45 @@ def page(request, slug):
 def post(request, slug):
     post_obj = Post.objects.get_published().filter(slug=slug).first()
 
+    if post_obj is None:
+        raise Http404()
+
     return render(
         request,
         'blog/pages/post.html',
         {
             'post': post_obj,
+            'page_title': f'Post - {post_obj.title} - ',
         }
     )
     
 
 def created_by(request, id):
+    user = User.objects.filter(pk=id).first()
+    
+    if user is None:
+        raise Http404()
+    
     posts = Post.objects.get_published().filter(created_by__pk=id)
     
     paginator = Paginator(posts, PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+    
+    user_full_name = user.username
+    
+    if user.first_name and user.last_name:
+        user_full_name = f'{user.first_name} {user.last_name}'
+        
+    page_title = 'Author - ' + user_full_name + ' - '
+        
 
     return render(
         request,
         'blog/pages/index.html',
         {
             'page_obj': page_obj,
+            'page_title': page_title,
         }
     )
     
@@ -74,11 +117,17 @@ def category(request, slug):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     
+    if len(posts) == 0:
+        raise Http404()
+    
+    page_title = f'Category - {posts[0].category.name} - '
+    
     return render(
         request, 
         'blog/pages/index.html',
         {
             'page_obj': page_obj,
+            'page_title': page_title,
         }
     )
     
@@ -93,11 +142,19 @@ def tag(request, slug):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     
+    if len(posts) == 0:
+        raise Http404()
+    
+    post_tag = posts[0].tags.filter(slug=slug).first()
+    
+    page_title = f'Tag - {post_tag.name} - '
+    
     return render(
         request, 
         'blog/pages/index.html',
         {
             'page_obj': page_obj,
+            'page_title': page_title,
         }
     )
     
@@ -117,5 +174,6 @@ def search(request):
         {
             'page_obj': posts,
             'search_value': search_value,
+            'page_title': f'Search - {search_value[:30]} - ',
         }
     )

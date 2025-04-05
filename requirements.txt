@@ -1,0 +1,10 @@
+asgiref==3.8.1
+bleach==6.2.0
+Django==5.1
+django-axes==7.0.1
+django-summernote==0.8.20.0
+pillow==10.4.0
+python-dotenv==1.0.1
+sqlparse==0.5.1
+typing_extensions==4.12.2
+webencodings==0.5.1
